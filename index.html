@@ -1,15 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BackstopJS Visual Tester</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BackstopJS Config Tool</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      padding: 2rem;
-      max-width: 600px;
-      margin: auto;
+      font-family: sans-serif;
+      max-width: 500px;
+      margin: 2rem auto;
     }
     label {
       display: block;
@@ -18,65 +17,70 @@
     input, select, button {
       width: 100%;
       padding: 0.5rem;
-      margin-top: 0.5rem;
-    }
-    .note {
-      font-size: 0.9em;
-      color: #666;
+      margin-top: 0.25rem;
     }
   </style>
 </head>
 <body>
-  <h1>BackstopJS Visual Tester</h1>
-  <form id="backstop-form">
-    <label>
-      URL 1 (Required)
-      <input type="url" id="url1" name="url1" required>
+  <h1>Visual Test Generator</h1>
+  <form id="configForm">
+    <label>Primary URL:
+      <input type="url" name="url1" required />
     </label>
-
-    <label>
-      URL 2 (Optional, for comparison)
-      <input type="url" id="url2" name="url2">
-    </label>
-
-    <label>
-      CSS Selector (Optional)
-      <input type="text" id="selector" name="selector" placeholder="e.g. .main-content">
-    </label>
-
-    <label>
-      Device / Breakpoint
-      <select id="device" name="device">
+    <label>Device:
+      <select name="device">
         <option value="desktop">Desktop</option>
         <option value="tablet">Tablet</option>
         <option value="mobile">Mobile</option>
       </select>
     </label>
-
-    <button type="submit">Run Backstop Test</button>
+    <label>Optional CSS Selector:
+      <input type="text" name="selector" />
+    </label>
+    <label>Optional Secondary URL:
+      <input type="url" name="url2" />
+    </label>
+    <button type="submit">Run Visual Test</button>
   </form>
-
-  <p class="note">After submitting, the test will be run via GitHub Actions. The visual report will be available in the reports folder.</p>
+  <p id="status"></p>
 
   <script>
-    document.getElementById('backstop-form').addEventListener('submit', async function (e) {
+    const form = document.getElementById('configForm');
+    const status = document.getElementById('status');
+
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      status.textContent = 'Submitting...';
 
-      const payload = {
-        url1: document.getElementById('url1').value,
-        url2: document.getElementById('url2').value || null,
-        selector: document.getElementById('selector').value || null,
-        device: document.getElementById('device').value
-      };
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
 
-      const fileName = `configs/input-${Date.now()}.json`;
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      try {
+        const resp = await fetch('https://api.github.com/repos/LinkGraph2021/backJS/actions/workflows/Submit-config-api.yml/dispatches', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/vnd.github+json',
+            'Authorization': 'Bearer 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', // Replace on deploy
+            'X-GitHub-Api-Version': '2022-11-28',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            ref: 'main',
+            inputs: data
+          })
+        });
 
-      alert("To run this test, please upload the generated JSON to the 'configs' folder in GitHub.");
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = fileName;
-      link.click();
+        if (resp.ok) {
+          status.textContent = 'Test submitted! The report will be available shortly.';
+        } else {
+          const err = await resp.json();
+          console.error(err);
+          status.textContent = 'Failed to submit. Check console.';
+        }
+      } catch (err) {
+        console.error(err);
+        status.textContent = 'Error submitting form.';
+      }
     });
   </script>
 </body>

@@ -1,0 +1,52 @@
+name: Submit Config from Web UI
+
+on:
+  workflow_dispatch:
+    inputs:
+      url1:
+        description: 'Primary URL to test'
+        required: true
+        type: string
+      device:
+        description: 'Device type (desktop, tablet, mobile)'
+        required: true
+        type: string
+      selector:
+        description: 'Optional CSS selector'
+        required: false
+        type: string
+      url2:
+        description: 'Optional secondary URL for comparison'
+        required: false
+        type: string
+
+jobs:
+  create-config:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Create timestamped config
+        id: create_file
+        run: |
+          TIMESTAMP=$(date +"%Y-%m-%d-%H%M%S")
+          FILENAME=configs/config-$TIMESTAMP.json
+          echo "Creating $FILENAME"
+
+          echo '{' > $FILENAME
+          echo '  "url1": "${{ github.event.inputs.url1 }}",' >> $FILENAME
+          echo '  "device": "${{ github.event.inputs.device }}",' >> $FILENAME
+          echo '  "selector": "${{ github.event.inputs.selector }}",' >> $FILENAME
+          echo '  "url2": "${{ github.event.inputs.url2 }}"' >> $FILENAME
+          echo '}' >> $FILENAME
+
+          echo "file_path=$FILENAME" >> $GITHUB_OUTPUT
+
+      - name: Commit config to repo
+        run: |
+          git config user.name "gh-pages-bot"
+          git config user.email "gh-pages@users.noreply.github.com"
+          git add configs/
+          git commit -m "Add config from web UI"
+          git push
