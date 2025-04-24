@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BackstopJS Visual Tester</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      max-width: 600px;
+      margin: auto;
+    }
+    label {
+      display: block;
+      margin-top: 1rem;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    .note {
+      font-size: 0.9em;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <h1>BackstopJS Visual Tester</h1>
+  <form id="backstop-form">
+    <label>
+      URL 1 (Required)
+      <input type="url" id="url1" name="url1" required>
+    </label>
+
+    <label>
+      URL 2 (Optional, for comparison)
+      <input type="url" id="url2" name="url2">
+    </label>
+
+    <label>
+      CSS Selector (Optional)
+      <input type="text" id="selector" name="selector" placeholder="e.g. .main-content">
+    </label>
+
+    <label>
+      Device / Breakpoint
+      <select id="device" name="device">
+        <option value="desktop">Desktop</option>
+        <option value="tablet">Tablet</option>
+        <option value="mobile">Mobile</option>
+      </select>
+    </label>
+
+    <button type="submit">Run Backstop Test</button>
+  </form>
+
+  <p class="note">After submitting, the test will be run via GitHub Actions. The visual report will be available in the reports folder.</p>
+
+  <script>
+    document.getElementById('backstop-form').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const payload = {
+        url1: document.getElementById('url1').value,
+        url2: document.getElementById('url2').value || null,
+        selector: document.getElementById('selector').value || null,
+        device: document.getElementById('device').value
+      };
+
+      const fileName = `configs/input-${Date.now()}.json`;
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+
+      alert("To run this test, please upload the generated JSON to the 'configs' folder in GitHub.");
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = fileName;
+      link.click();
+    });
+  </script>
+</body>
+</html>

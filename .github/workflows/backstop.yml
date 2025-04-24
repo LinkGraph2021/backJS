@@ -1,0 +1,50 @@
+name: Run BackstopJS Visual Test
+
+on:
+  push:
+    paths:
+      - 'configs/*.json'
+
+jobs:
+  run-backstop:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install BackstopJS
+        run: npm install -g backstopjs
+
+      - name: Find Latest Config
+        id: config
+        run: |
+          LATEST_CONFIG=$(ls -t configs/*.json | head -n 1)
+          echo "LATEST_CONFIG=$LATEST_CONFIG" >> $GITHUB_ENV
+
+      - name: Generate Backstop Config
+        run: |
+          node .github/scripts/generate-backstop-config.js "$LATEST_CONFIG"
+
+      - name: Run BackstopJS
+        run: backstop test --config=backstop.generated.config.js
+
+      - name: Save Report
+        run: |
+          TIMESTAMP=$(date +"%Y-%m-%d-%H%M%S")
+          mkdir -p reports/$TIMESTAMP
+          cp -r backstop_data/html_report/* reports/$TIMESTAMP/
+          echo "Report saved to reports/$TIMESTAMP"
+
+      - name: Commit Report
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add reports/
+          git commit -m "Add BackstopJS report - $TIMESTAMP"
+          git push
